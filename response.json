@@ -1,0 +1,14 @@
+{
+    "success": true,
+    "query": {
+        "from": "RUB",
+        "to": "KZT",
+        "amount": 1
+    },
+    "info": {
+        "timestamp": 1653743355,
+        "rate": 6.615451
+    },
+    "date": "2022-05-28",
+    "result": 6.615451
+}
