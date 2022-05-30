@@ -19,6 +19,7 @@ var amount = flag.Float64("amount", 1, "Specfy amount of currecny for conversion
 var date = flag.String("date", "", "Specfy date for historical data (format YYYY-MM-DD)")
 
 func main() {
+	flag.Parse()
 	var dt time.Time
 	if *date == "" {
 		dt = time.Now()
@@ -40,9 +41,6 @@ func createAPIQuery(from, to string, amount float64, date time.Time) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	flag.Parse()
-
 	values := url.Values{}
 	values.Add("from", from)
 	values.Add("to", to)
