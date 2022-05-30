@@ -25,7 +25,10 @@ func main() {
 	}
 	url := createAPIQuery(*fromCurr, *toCurr, *amount, dt)
 
-	result := getResult(url)
+	result, err := getResult(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if result.Success {
 		fmt.Printf("[%s] %v %s = %.2f %s\n", result.Date, result.Query.Amount, result.Query.From, result.Result, result.Query.To)
@@ -51,31 +54,30 @@ func createAPIQuery(from, to string, amount float64, date time.Time) string {
 	return endPoint.String()
 }
 
-func getResult(url string) *Response {
+func getResult(url string) (*Response, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
-
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
+
 	res, err := client.Do(req)
 	if res.Body != nil {
 		defer res.Body.Close()
 	}
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-
 	result := Response{}
 
 	if err = json.Unmarshal(body, &result); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return &result
+	return &result, nil
 }
