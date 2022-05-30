@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"time"
@@ -20,10 +21,14 @@ var date = flag.String("date", "", "Specfy date for historical data (format YYYY
 
 func main() {
 	flag.Parse()
-	var dt time.Time
-	if *date == "" {
-		dt = time.Now()
+	dt := time.Now().UTC()
+	var err error
+	if *date != "" {
+		if dt, err = time.Parse("2006-01-02", *date); err != nil {
+			log.Fatal(err)
+		}
 	}
+
 	url := createAPIQuery(*fromCurr, *toCurr, *amount, dt)
 
 	result, err := getResult(url)
@@ -32,7 +37,27 @@ func main() {
 	}
 
 	if result.Success {
-		fmt.Printf("[%s] %v %s = %.2f %s\n", result.Date, result.Query.Amount, result.Query.From, result.Result, result.Query.To)
+		fmt.Printf("[%s] %v %s = %.2f %s", result.Date, result.Query.Amount, result.Query.From, result.Result, result.Query.To)
+	}
+
+	var resultYesterday *Response
+	var change float64
+	if *amount == 1 {
+		url = createAPIQuery(*fromCurr, *toCurr, *amount, dt.Add(-time.Hour*24))
+		resultYesterday, err = getResult(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+		change = result.Result - resultYesterday.Result
+		if math.Abs(change) < 0.01 {
+			change = 0
+		}
+	}
+
+	if resultYesterday != nil && resultYesterday.Success {
+		fmt.Printf(", change: %.2f\n", change)
+	} else {
+		fmt.Println()
 	}
 }
 
