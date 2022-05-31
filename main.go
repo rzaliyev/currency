@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -36,25 +37,31 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if result.Success {
+	var resultTheDayBefore *Response
+	var change float64
+	if *amount == 1 {
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			url = createAPIQuery(*fromCurr, *toCurr, *amount, dt.Add(-time.Hour*24))
+			resultTheDayBefore, err = getResult(url)
+			if err != nil {
+				log.Fatal(err)
+			}
+			change = result.Result - resultTheDayBefore.Result
+			if math.Abs(change) < 0.01 {
+				change = 0
+			}
+			wg.Done()
+		}()
+		wg.Wait()
+	}
+
+	if result != nil && result.Success {
 		fmt.Printf("[%s] %v %s = %.2f %s", result.Date, result.Query.Amount, result.Query.From, result.Result, result.Query.To)
 	}
 
-	var resultYesterday *Response
-	var change float64
-	if *amount == 1 {
-		url = createAPIQuery(*fromCurr, *toCurr, *amount, dt.Add(-time.Hour*24))
-		resultYesterday, err = getResult(url)
-		if err != nil {
-			log.Fatal(err)
-		}
-		change = result.Result - resultYesterday.Result
-		if math.Abs(change) < 0.01 {
-			change = 0
-		}
-	}
-
-	if resultYesterday != nil && resultYesterday.Success {
+	if resultTheDayBefore != nil && resultTheDayBefore.Success {
 		fmt.Printf(", change: %.2f\n", change)
 	} else {
 		fmt.Println()
